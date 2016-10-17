@@ -2,8 +2,12 @@ FROM kdelfour/supervisor-docker
 # Initially was based on work of Christian Lück <christian@lueck.tv>
 MAINTAINER Andreas Löffler <andy@x86dev.com>
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-    nginx git ca-certificates php5-fpm php5-cli php5-curl php5-gd php5-json php5-pgsql
+# install packages, and clean up
+RUN DEBIAN_FRONTEND=noninteractive \
+	apt-get update \
+	&& apt-get install -y nginx git ca-certificates php5-fpm php5-cli php5-curl php5-gd php5-json php5-pgsql \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # add ttrss as the only Nginx site
 ADD ttrss-nginx.conf /etc/nginx/sites-available/ttrss
@@ -27,6 +31,7 @@ EXPOSE 443
 ENV DB_NAME ttrss
 ENV DB_USER ttrss
 ENV DB_PASS ttrss
+ENV TTRSS_SSL_ENABLED 1
 
 # always re-configure database with current ENV when RUNning container, then monitor all services
 RUN mkdir -p /srv
@@ -47,9 +52,6 @@ ADD service-ttrss-update.conf /etc/supervisor/conf.d/ttrss-update.conf
 
 # only run the setup once
 RUN /srv/setup-ttrss.sh
-
-# clean up
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # start supervisord
 WORKDIR /srv
